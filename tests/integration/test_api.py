@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+from xml.etree import ElementTree
 
 import pytest
 
@@ -140,3 +141,18 @@ async def test_generation_timeout():
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+def test_preview_requires_the_token(client, sample):
+    assert client.post(f"{URL}/preview", json=sample).status_code == 401
+
+
+def test_preview_is_valid_svg_and_escapes_project_text(client, sample):
+    sample["project"]["proyecto"] = "<script>alert(1)</script>"
+    response = client.post(f"{URL}/preview", json=sample, headers=AUTH)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/svg+xml"
+    root = ElementTree.fromstring(response.content)
+    assert root.tag.endswith("svg")
+    assert b"<script" not in response.content
+    assert "1:50" in response.text

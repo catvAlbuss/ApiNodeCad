@@ -82,6 +82,12 @@ def test_project_accepts_extra_fields_blanks_and_numbers(sample):
     assert (project.codigo, project.ingeniero, project.cliente) == ("32478", "-", "-")
 
 
+@pytest.mark.parametrize(("value", "expected"), [("20", 20), (15, 15), (0, None), ("", None), (None, None)])
+def test_spacing_accepts_what_the_sheet_sends(sample, value, expected):
+    sample["steel"]["pantalla"]["principal"]["spacing"] = value
+    assert WallPlanRequest.model_validate(sample).steel.pantalla.principal.spacing == expected
+
+
 def test_steel_label_fits_the_table(sample):
     sample["steel"]["pantalla"]["principal"]["label"] = "x" * 41
     assert errors_of(sample)[0]["loc"] == ("steel", "pantalla", "principal", "label")

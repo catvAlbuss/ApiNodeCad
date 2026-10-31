@@ -11,10 +11,15 @@ Length = Annotated[float, Field(ge=0, le=MAX_METERS)]
 PositiveLength = Annotated[float, Field(gt=0, le=MAX_METERS)]
 Stress = Annotated[float, Field(gt=0, le=100_000)]
 Cover = Annotated[float, Field(gt=0, le=50)]
+Spacing = Annotated[float, Field(gt=0, le=100, strict=False)]
 
 
 def _blank_as_dash(value: object) -> object:
     return "-" if value is None or value == "" else value
+
+
+def _unset_spacing(value: object) -> object:
+    return None if value in ("", 0, "0") else value
 
 
 def _rule(message: str, *fields: str) -> PydanticCustomError:
@@ -67,7 +72,8 @@ class Geometry(Contract):
 
 class SteelRow(Contract):
     label: Annotated[str, Field(min_length=1, max_length=40)]
-    spacing: Annotated[float, Field(gt=0, le=100)] | None = None
+    # Viene de campos de la hoja: admite "20", y 0 o vacío si aún no hay diseño.
+    spacing: Annotated[Spacing | None, BeforeValidator(_unset_spacing)] = None
 
 
 class SteelElement(Contract):

@@ -10,7 +10,7 @@ Requiere Python 3.13.
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements-dev.txt   # Linux y macOS: .venv/bin/python
 cp .env.example .env.python                                    # Completar API_TOKEN (32 caracteres o más)
-.venv/Scripts/uvicorn --factory app.main:create_app --reload
+.venv/Scripts/uvicorn --factory app.main:create_app --port 8010 --reload
 ```
 
 Pruebas y estilo:
@@ -30,7 +30,7 @@ docker run --rm -p 8000:8000 -m 512m -e API_TOKEN=<token> api-cad
 ## Uso
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/planos/muro-contencion \
+curl -X POST http://localhost:8010/api/v1/planos/muro-contencion \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   --data-binary @tests/fixtures/muro-7.4m.json \
@@ -40,6 +40,7 @@ curl -X POST http://localhost:8000/api/v1/planos/muro-contencion \
 | Ruta | Descripción |
 |---|---|
 | `POST /api/v1/planos/muro-contencion` | Devuelve el DXF. Requiere el token. |
+| `POST /api/v1/planos/muro-contencion/preview` | Devuelve una vista previa SVG. Requiere el token. |
 | `GET /health` | Estado y versión. |
 
 Errores con formato único:
