@@ -4,8 +4,8 @@ import Drawing from 'dxf-writer';
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({ origin: 'https://ryaie.com' }));
+app.use(express.json({ limit: '256kb' }));
 
 // ====================================
 // 1. CONFIGURACIONES Y CONSTANTES
@@ -2466,11 +2466,6 @@ class WallRenderer {
         // === 5. (Opcional) unir puntos proyectados en cierto orden ===
         this.drawPolyline(proy);
 
-        // === 6. Mostrar en consola para modificar uno por uno ===
-        base.forEach((p, i) => console.log(`P${i + 1}: (${p.x}, ${p.y})`));
-
-        proy.forEach((p, i) => console.log(`P${i + 1}_3D: (${p.x}, ${p.y})`));
-
         this.annotationSystem.addProfessionalTitle(offsetX, offsetY, wallType, '1:50', predim);
 
         return { base, proy };
@@ -2830,8 +2825,7 @@ app.post('/exportar', (req, res) => {
             console.error('❌ Validación de datos falló');
             return res.status(400).json({
                 success: false,
-                message: 'Datos de entrada inválidos',
-                received: { predim, dimen, resultdim }
+                message: 'Datos de entrada inválidos'
             });
         }
         const orchestrator = new DXFOrchestrator();
@@ -2842,14 +2836,12 @@ app.post('/exportar', (req, res) => {
     } catch (error) {
         console.error('❌ Error detallado en /exportar:', {
             message: error.message,
-            stack: error.stack,
-            body: req.body
+            stack: error.stack
         });
 
         res.status(500).json({
             success: false,
             error: 'Error interno del servidor',
-            details: error.message,
             timestamp: new Date().toISOString()
         });
     }
@@ -2873,7 +2865,7 @@ app.post('/validar-parametros', (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ error: 'Error al validar parámetros', details: error.message });
+        res.status(500).json({ error: 'Error al validar parámetros' });
     }
 });
 
