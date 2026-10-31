@@ -36,8 +36,7 @@ def test_authentication_runs_before_parsing(client):
 
 def test_valid_contract_reaches_generation(client, sample):
     response = client.post(URL, json=sample, headers=AUTH)
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "NOT_IMPLEMENTED"
+    assert response.status_code == 200
 
 
 def test_invalid_json_is_400(client):
@@ -81,7 +80,7 @@ def test_body_over_limit_without_content_length():
 def test_rate_limit_returns_429_with_retry_after(sample):
     client = make_client(rate_limit_requests=2)
     statuses = [client.post(URL, json=sample, headers=AUTH).status_code for _ in range(3)]
-    assert statuses == [501, 501, 429]
+    assert statuses == [200, 200, 429]
 
 
 def test_rate_limit_also_counts_failed_tokens(sample):

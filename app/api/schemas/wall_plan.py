@@ -1,4 +1,5 @@
 """Contrato de entrada del plano. Valida forma y rangos; no calcula ingeniería."""
+
 from typing import Annotated, Self
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator

@@ -1,4 +1,5 @@
 """Formato único de error: { "error": { "code", "message", "fields" } }."""
+
 from collections.abc import Sequence
 
 from fastapi import FastAPI, Request

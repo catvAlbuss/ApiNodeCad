@@ -5,11 +5,17 @@ from starlette.concurrency import run_in_threadpool
 
 from app.api.errors import ApiError
 from app.api.schemas.wall_plan import WallPlanRequest
+from app.domain.sheet.scale import SCALES, PlanDoesNotFit
+from app.drawing.sheet.layout import build_plan
+from app.render.dxf_writer import render_dxf
 
 
 def build_wall_plan(plan: WallPlanRequest) -> bytes:
-    # Fase 1: el contrato ya está activo; el dibujo llega en la fase 2.
-    raise ApiError(501, "NOT_IMPLEMENTED", "La generación del plano aún no está disponible")
+    try:
+        return render_dxf(build_plan(plan))
+    except PlanDoesNotFit:
+        message = f"El muro no entra en la lámina A1 a escala 1:{SCALES[-1]}"
+        raise ApiError(400, "VALIDATION_ERROR", message, ["geo"]) from None
 
 
 async def run_with_timeout[T](work: Callable[[], T], timeout_seconds: float) -> T:
