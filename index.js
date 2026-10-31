@@ -1,12 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
 import Drawing from 'dxf-writer';
-import { publicDecrypt } from 'crypto';
 
-const __dirname = path.resolve();
 const app = express();
 
 app.use(cors());
@@ -17,10 +12,6 @@ app.use(express.json());
 // ====================================
 
 const CONFIG = {
-    DIRECTORIES: {
-        DOCUMENTS: path.join(__dirname, 'src/documents')
-    },
-
     DRAWING: {
         UNITS: 'Millimeters',
         MARGIN: 0.60,
@@ -2810,19 +2801,11 @@ class DXFOrchestrator {
     finalizePlan() {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `plano_muro_profesional_${timestamp}.dxf`;
-        const filePath = path.join(CONFIG.DIRECTORIES.DOCUMENTS, fileName);
 
-        // Crear directorio si no existe
-        if (!fs.existsSync(CONFIG.DIRECTORIES.DOCUMENTS)) {
-            fs.mkdirSync(CONFIG.DIRECTORIES.DOCUMENTS, { recursive: true });
-        }
-
-        // Guardar archivo
-        fs.writeFileSync(filePath, this.drawing.toDxfString());
-
+        // El plano se genera en memoria: nada se guarda en el servidor
         return {
             fileName,
-            filePath,
+            content: this.drawing.toDxfString(),
             success: true
         };
     }
@@ -2836,8 +2819,6 @@ class informacionleyenda { }
 // ====================================
 // 10. RUTAS DE LA API
 // ====================================
-
-app.use('/documents', express.static(CONFIG.DIRECTORIES.DOCUMENTS));
 
 // Ruta principal de exportación
 app.post('/exportar', (req, res) => {
@@ -2855,18 +2836,8 @@ app.post('/exportar', (req, res) => {
         }
         const orchestrator = new DXFOrchestrator();
         const result = orchestrator.generateCompletePlan(predim, dimen, resultdim, concretoArmadoData);
-        // Verificar que el archivo existe
-        if (!fs.existsSync(result.filePath)) {
-            throw new Error(`Archivo no encontrado: ${result.filePath}`);
-        }
         // Enviar archivo para descarga
-        res.download(result.filePath, result.fileName, (err) => {
-            if (err) {
-                console.error('⚠️ Error al enviar el archivo:', err);
-                res.status(500).json({ success: false, message: 'Error al descargar el archivo' });
-            } else {
-            }
-        });
+        res.attachment(result.fileName).send(result.content);
 
     } catch (error) {
         console.error('❌ Error detallado en /exportar:', {
