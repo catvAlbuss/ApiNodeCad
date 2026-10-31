@@ -1,0 +1,31 @@
+{
+  "geo": {
+    "punta": 1.8, "batter": 0.7, "crown": 0.2, "heel": 3,
+    "hz": 0.75, "stem": 6.65, "rise": 0.64,
+    "keyX": 2.18, "keyTop": 0.9, "keyBottom": 0.2, "keyDepth": 1,
+    "front": 1, "surcharge": 0.4
+  },
+  "steel": {
+    "pantalla": {
+      "principal": { "label": "2 Ø 3/4 @ 20 cm", "spacing": 20 },
+      "secundario": { "label": "2 Ø 5/8 @ 20 cm", "spacing": 20 },
+      "transversal": { "label": "1 Ø 1/2 @ 20 cm", "spacing": 20 },
+      "transversal2": { "label": "1 Ø 1/2 @ 10 cm", "spacing": 10 }
+    },
+    "punta": {}, "talon": {}, "key": {}
+  },
+  "cutoffs": {
+    "pantalla": { "L": 4 },
+    "talon": { "L": 2 },
+    "pedestal": { "L": 0 }
+  },
+  "materials": { "fc": 210, "fy": 4200, "qadm": 20 },
+  "project": {
+    "proyecto": "PROYECTO DE PRUEBA",
+    "codigo": "00000",
+    "cliente": "CLIENTE DE PRUEBA",
+    "ubicacion": "UBICACIÓN DE PRUEBA",
+    "ingeniero": "-",
+    "fecha": "2026-10-31"
+  }
+}
