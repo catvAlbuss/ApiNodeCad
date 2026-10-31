@@ -66,7 +66,7 @@ class Geometry(Contract):
 
 
 class SteelRow(Contract):
-    label: Annotated[str, Field(min_length=1, max_length=80)]
+    label: Annotated[str, Field(min_length=1, max_length=40)]
     spacing: Annotated[float, Field(gt=0, le=100)] | None = None
 
 

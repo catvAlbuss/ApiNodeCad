@@ -82,6 +82,11 @@ def test_project_accepts_extra_fields_blanks_and_numbers(sample):
     assert (project.codigo, project.ingeniero, project.cliente) == ("32478", "-", "-")
 
 
+def test_steel_label_fits_the_table(sample):
+    sample["steel"]["pantalla"]["principal"]["label"] = "x" * 41
+    assert errors_of(sample)[0]["loc"] == ("steel", "pantalla", "principal", "label")
+
+
 def test_project_text_has_a_limit(sample):
     sample["project"]["proyecto"] = "x" * 301
     assert errors_of(sample)[0]["loc"] == ("project", "proyecto")

@@ -16,6 +16,7 @@ from app.config import Settings
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.getLogger("ezdxf").setLevel(logging.ERROR)
 
     # Sin documentación pública: el repositorio y la API son visibles desde internet.
     app = FastAPI(title="API CAD", version=__version__, docs_url=None, redoc_url=None, openapi_url=None)

@@ -1,4 +1,4 @@
-"""Marco de lámina y membrete."""
+"""Marco de lámina y membrete con datos editables."""
 
 import textwrap
 
@@ -10,54 +10,62 @@ from app.standards import typography as type_size
 
 MEMBRETE = "MEMBRETE"
 WRAP_WIDTH = 50
+LINE_STEP = 6
 
 
-def frame_and_block(sheet: Sheet, plan) -> None:
-    unit = sheet.unit
-
-    def paper(x: float, y: float) -> Point:
-        return Point(x * unit, y * unit)
-
+def draw_frame(paper: Sheet) -> None:
     width, height, left, margin = PAPER.width, PAPER.height, PAPER.left, PAPER.margin
-    x0, x1 = PAPER.block_x, width - margin
-    sheet.poly("MARCO", [paper(0, 0), paper(width, 0), paper(width, height), paper(0, height)], closed=True)
-    sheet.poly(
+    right = width - margin
+    paper.poly("MARCO", [(0, 0), (width, 0), (width, height), (0, height)], closed=True)
+    paper.poly(
         "MARCO",
-        [paper(left, margin), paper(x1, margin), paper(x1, height - margin), paper(left, height - margin)],
+        [(left, margin), (right, margin), (right, height - margin), (left, height - margin)],
         closed=True,
     )
-    sheet.line(MEMBRETE, paper(x0, margin), paper(x0, height - margin))
 
+
+def draw_title_block(block: Sheet, plan) -> None:
+    height, margin = PAPER.height, PAPER.margin
+    x0, x1 = PAPER.block_x, PAPER.width - margin
+    block.line(MEMBRETE, Point(x0, margin), Point(x0, height - margin))
     y = height - margin
 
-    def row(label: str, value: str, lines: int = 1, size: float = type_size.BODY) -> None:
+    def row(label: str, tag: str, value: str, lines: int = 1, size: float = type_size.BODY) -> None:
         nonlocal y
         wrapped = (textwrap.wrap(value, WRAP_WIDTH) or ["-"])[:lines]
-        sheet.text(MEMBRETE, paper(x0 + 3, y - 5), type_size.BODY, label)
+        block.text(MEMBRETE, Point(x0 + 3, y - 5), type_size.BODY, label)
         for index, text in enumerate(wrapped):
-            sheet.text(MEMBRETE, paper(x0 + 3, y - 11 - index * 6), size, text)
-        y -= 8 + len(wrapped) * 6
-        sheet.line(MEMBRETE, paper(x0, y), paper(x1, y))
+            name = tag if lines == 1 else f"{tag}_{index + 1}"
+            block.attribute(MEMBRETE, Point(x0 + 3, y - 11 - index * LINE_STEP), size, name, text)
+        y -= 8 + len(wrapped) * LINE_STEP
+        block.line(MEMBRETE, Point(x0, y), Point(x1, y))
 
     project = plan.project
-    row("PROYECTO:", project.proyecto, 6, type_size.SUBTITLE)
-    row("CÓDIGO:", project.codigo)
-    row("ENTIDAD / CLIENTE:", project.cliente, 2)
-    row("UBICACIÓN:", project.ubicacion, 4)
-    row("ESPECIALIDAD:", "ESTRUCTURAS", 1, type_size.SUBTITLE)
-    row(
-        "PLANO:",
-        f"MURO DE CONTENCIÓN H = {fixed(top_y(plan.geo))} m - DIMENSIONES Y REFUERZO",
-        2,
-        type_size.SUBTITLE,
-    )
-    row("INGENIERO RESPONSABLE:", project.ingeniero)
-    sheet.text(MEMBRETE, paper(x0 + 3, y - 5), type_size.BODY, "SELLO Y FIRMA:")
+    title = f"MURO DE CONTENCIÓN H = {fixed(top_y(plan.geo))} m - DIMENSIONES Y REFUERZO"
+    row("PROYECTO:", "PROYECTO", project.proyecto, 6, type_size.SUBTITLE)
+    row("CÓDIGO:", "CODIGO", project.codigo)
+    row("ENTIDAD / CLIENTE:", "CLIENTE", project.cliente, 2)
+    row("UBICACIÓN:", "UBICACION", project.ubicacion, 4)
+    row("ESPECIALIDAD:", "ESPECIALIDAD", "ESTRUCTURAS", 1, type_size.SUBTITLE)
+    row("PLANO:", "PLANO", title, 2, type_size.SUBTITLE)
+    row("INGENIERO RESPONSABLE:", "INGENIERO", project.ingeniero)
+    block.text(MEMBRETE, Point(x0 + 3, y - 5), type_size.BODY, "SELLO Y FIRMA:")
 
-    sheet.line(MEMBRETE, paper(x0, margin + 30), paper(x1, margin + 30))
-    sheet.line(MEMBRETE, paper(x0 + 110, margin), paper(x0 + 110, margin + 30))
-    sheet.text(MEMBRETE, paper(x0 + 3, margin + 22), type_size.BODY, f"ESCALA: 1:{sheet.scale}")
-    sheet.text(MEMBRETE, paper(x0 + 3, margin + 14), type_size.BODY, f"FECHA: {project.fecha}")
-    sheet.text(MEMBRETE, paper(x0 + 3, margin + 6), type_size.BODY, "UNIDADES: METROS")
-    sheet.text(MEMBRETE, paper(x0 + 113, margin + 22), type_size.BODY, "LÁMINA:")
-    sheet.text(MEMBRETE, paper(x0 + 140, margin + 8), type_size.SHEET_NUMBER, project.lamina, "center")
+    body = type_size.BODY
+    block.line(MEMBRETE, Point(x0, margin + 30), Point(x1, margin + 30))
+    block.line(MEMBRETE, Point(x0 + 110, margin), Point(x0 + 110, margin + 30))
+    block.text(MEMBRETE, Point(x0 + 3, margin + 22), body, "ESCALA:")
+    block.attribute(MEMBRETE, Point(x0 + 28, margin + 22), body, "ESCALA", f"1:{block.scale}")
+    block.text(MEMBRETE, Point(x0 + 3, margin + 14), body, "FECHA:")
+    block.attribute(MEMBRETE, Point(x0 + 28, margin + 14), body, "FECHA", project.fecha)
+    block.text(MEMBRETE, Point(x0 + 3, margin + 6), body, "UNIDADES:")
+    block.attribute(MEMBRETE, Point(x0 + 28, margin + 6), body, "UNIDADES", "METROS")
+    block.text(MEMBRETE, Point(x0 + 113, margin + 22), body, "LÁMINA:")
+    block.attribute(
+        MEMBRETE,
+        Point(x0 + 140, margin + 8),
+        type_size.SHEET_NUMBER,
+        "LAMINA",
+        project.lamina,
+        "center",
+    )

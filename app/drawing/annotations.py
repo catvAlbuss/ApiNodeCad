@@ -1,14 +1,20 @@
 """Cotas, referencias, títulos de vista y terreno."""
 
 import math
+import textwrap
 
 from app.domain.wall.geometry import Point
 from app.drawing.primitives import Align, Sheet
+from app.standards import hatches
 from app.standards import typography as type_size
 
 COTAS = "COTAS"
 TEXTO = "TEXTO"
 TERRENO = "TERRENO"
+GROUND_BAND = 5  # Espesor de la trama de terreno, en mm de papel
+LEADER_WRAP = 24  # Caracteres por línea de una referencia
+LEADER_LINE = 5  # Separación entre líneas de una referencia, en mm de papel
+LEADER_GAP = 16  # Distancia mínima entre referencias apiladas, en mm de papel
 
 
 def fixed(value: float, decimals: int = 2) -> str:
@@ -19,56 +25,44 @@ def shift(origin: Point, p: Point) -> Point:
     return Point(origin.x + p.x, origin.y + p.y)
 
 
-def dimension(sheet: Sheet, a: Point, b: Point, offset_mm: float, label: str | None = None) -> None:
-    """Cota con extensiones, trazos a 45° y valor sobre la línea."""
+def dimension(sheet: Sheet, a: Point, b: Point, offset_mm: float, label: str = "<>") -> None:
+    """Cota con el valor medido por CAD, a `offset_mm` de la recta a-b."""
     length = math.dist(a, b)
     if length < 1e-6:
         return
-    unit = sheet.unit
     ux, uy = (b.x - a.x) / length, (b.y - a.y) / length
-    nx, ny = -uy, ux
-    distance = offset_mm * unit
-    side = math.copysign(1, offset_mm)
-
-    def along_normal(p: Point, d: float) -> Point:
-        return Point(p.x + nx * d, p.y + ny * d)
-
-    start, end = along_normal(a, distance), along_normal(b, distance)
-    gap = 1.5 * unit * side
-    sheet.line(COTAS, along_normal(a, gap), along_normal(start, gap))
-    sheet.line(COTAS, along_normal(b, gap), along_normal(end, gap))
-    sheet.line(COTAS, start, end)
-    tick = 1.2 * unit
-    for p in (start, end):
-        sheet.line(
-            COTAS,
-            Point(p.x - (ux + nx) * tick, p.y - (uy + ny) * tick),
-            Point(p.x + (ux + nx) * tick, p.y + (uy + ny) * tick),
-        )
+    distance = offset_mm * sheet.unit
+    line_point = Point(a.x - uy * distance, a.y + ux * distance)
     vertical = abs(uy) > 0.9
-    middle = Point((start.x + end.x) / 2, (start.y + end.y) / 2)
-    place = Point(middle.x - unit, middle.y) if vertical else Point(middle.x, middle.y + unit)
-    sheet.text(COTAS, place, type_size.BODY, label or fixed(length), "center", 90 if vertical else 0)
+    if (uy if vertical else ux) < 0:  # Texto legible desde abajo o desde la derecha
+        a, b = b, a
+    sheet.dimension(COTAS, a, b, line_point, 90 if vertical else 0, label)
 
 
 def leader(sheet: Sheet, target: Point, elbow: Point, label: str, align: Align = "left") -> None:
     run = (1 if align == "left" else -1) * 4 * sheet.unit
     end = Point(elbow.x + run, elbow.y)
     sheet.poly(COTAS, [target, elbow, end])
-    place = Point(end.x + run / 2, end.y - type_size.BODY * sheet.unit / 2)
-    sheet.text(TEXTO, place, type_size.BODY, label, align)
+    x = end.x + run / 2
+    for index, line in enumerate(textwrap.wrap(label, LEADER_WRAP)):
+        y = end.y - (type_size.BODY / 2 + index * LEADER_LINE) * sheet.unit
+        sheet.text(TEXTO, Point(x, y), type_size.BODY, line, align)
 
 
-def ground(sheet: Sheet, a: Point, b: Point) -> None:
+def stacked(heights: list[float], gap: float) -> list[float]:
+    """Baja las alturas pedidas, de arriba abajo, hasta separarlas al menos `gap`."""
+    placed: list[float] = []
+    for height in heights:
+        placed.append(min(height, placed[-1] - gap) if placed else height)
+    return placed
+
+
+def ground(sheet: Sheet, a: Point, b: Point, band_end: Point | None = None) -> None:
+    """Línea de terreno con trama debajo; `band_end` ajusta su borde contra el muro."""
+    band = GROUND_BAND * sheet.unit
     sheet.line(TERRENO, a, b)
-    length = math.dist(a, b)
-    step, size = 4 * sheet.unit, 2 * sheet.unit
-    distance = step / 2
-    while distance < length:
-        t = distance / length
-        p = Point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
-        sheet.line(TERRENO, p, Point(p.x - size, p.y - size))
-        distance += step
+    bottom_right = band_end or Point(b.x, b.y - band)
+    sheet.hatch(TERRENO, [a, b, bottom_right, Point(a.x, bottom_right.y)], hatches.SOIL)
 
 
 def view_title(sheet: Sheet, left: Point, number: int, title: str) -> None:

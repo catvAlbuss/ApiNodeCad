@@ -15,24 +15,27 @@ from app.domain.sheet.scale import (
 from app.domain.wall.geometry import Point, top_y
 from app.domain.wall.reinforcement import steel_row
 from app.drawing.annotations import view_title
-from app.drawing.primitives import Sheet
-from app.drawing.sheet.frame import frame_and_block
+from app.drawing.primitives import Plan, Sheet
+from app.drawing.sheet.frame import draw_frame, draw_title_block
 from app.drawing.sheet.tables import COLUMNS, tables_and_notes
 from app.drawing.views.mesh import mesh_view
 from app.drawing.views.section import geometry_view, reinforcement_view
 
 
-def build_plan(plan) -> Sheet:
+def build_plan(plan) -> Plan:
     geo, steel = plan.geo, plan.steel
     scale = choose_scale(geo)
     sheet = Sheet(scale)
+    paper = Sheet(scale, paper=True)
+    title_block = Sheet(scale, paper=True)
     unit = sheet.unit
     base = geo.base
 
     def mm(meters: float) -> float:
         return to_paper(meters, scale)
 
-    frame_and_block(sheet, plan)
+    draw_frame(paper)
+    draw_title_block(title_block, plan)
 
     # Fila superior: secciones
     section_w = section_width(base, scale)
@@ -47,8 +50,8 @@ def build_plan(plan) -> Sheet:
     view_title(sheet, Point(second.x, title_y), 2, "SECCIÓN TÍPICA - REFUERZO")
 
     # Columna de cuadros
-    table_x = (PAPER.block_x - sum(COLUMNS) - 4) * unit
-    tables_and_notes(sheet, Point(table_x, (CONTENT_TOP + 5) * unit), plan)
+    table_x = PAPER.block_x - sum(COLUMNS) - 4
+    tables_and_notes(paper, Point(table_x, CONTENT_TOP + 5), plan)
 
     # Fila inferior: mallas
     panel = min(PANEL_WIDTH, base)
@@ -70,4 +73,4 @@ def build_plan(plan) -> Sheet:
         mesh_view(sheet, origin, width, height, vertical, horizontal)
         view_title(sheet, Point(origin.x, (mesh_y - 16) * unit), number, title)
         cursor += mesh_step(width, scale)
-    return sheet
+    return Plan(scale, sheet, paper, title_block)

@@ -1,5 +1,7 @@
 """Cuadro de acero, especificaciones técnicas y notas."""
 
+import textwrap
+
 from app.domain.wall.geometry import Point
 from app.domain.wall.reinforcement import cutoff_length, steel_row
 from app.drawing.annotations import fixed
@@ -7,8 +9,10 @@ from app.drawing.primitives import Sheet
 from app.standards import typography as type_size
 
 TEXTO = "TEXTO"
-COLUMNS = (62, 58)
+COLUMNS = (54, 66)
 ROW_HEIGHT = 8
+CELL_LINE = 5
+CELL_WRAP = 32  # Caracteres que caben en la columna más ancha
 
 STEEL_ROWS = (
     ("Pantalla, cara terreno", "pantalla", "principal"),
@@ -32,10 +36,13 @@ def table(sheet: Sheet, origin: Point, rows: list[tuple[str, str]], title: str) 
     for row in rows:
         sheet.line(TEXTO, Point(origin.x, y), Point(origin.x + total, y))
         x = origin.x
-        for cell, width in zip(row, COLUMNS, strict=True):
-            sheet.text(TEXTO, Point(x + 1.5 * unit, y - 5.5 * unit), type_size.BODY, cell)
+        cells = [textwrap.wrap(cell, CELL_WRAP) for cell in row]
+        for lines, width in zip(cells, COLUMNS, strict=True):
+            for index, line in enumerate(lines):
+                place = Point(x + 1.5 * unit, y - (5.5 + index * CELL_LINE) * unit)
+                sheet.text(TEXTO, place, type_size.BODY, line)
             x += width * unit
-        y -= ROW_HEIGHT * unit
+        y -= (ROW_HEIGHT + (max(map(len, cells)) - 1) * CELL_LINE) * unit
     sheet.line(TEXTO, Point(origin.x, y), Point(origin.x + total, y))
     x = origin.x
     for width in (*COLUMNS, 0):

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: api-cad
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: API_TOKEN
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://ryaie.com
